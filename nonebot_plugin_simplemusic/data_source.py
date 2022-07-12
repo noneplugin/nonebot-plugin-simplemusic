@@ -5,13 +5,24 @@ from nonebot.adapters.onebot.v11 import MessageSegment
 
 
 async def search_qq(keyword: str) -> Union[str, MessageSegment]:
-    url = "https://c.y.qq.com/soso/fcgi-bin/client_search_cp"
-    params = {"p": 1, "n": 1, "w": keyword, "format": "json"}
+    url = "https://c.y.qq.com/splcloud/fcgi-bin/smartbox_new.fcg"
+    params = {
+        "format": "json",
+        "inCharset": "utf-8",
+        "outCharset": "utf-8",
+        "notice": 0,
+        "platform": "yqq.json",
+        "needNewCode": 0,
+        "uin": 0,
+        "hostUin": 0,
+        "is_xml": 0,
+        "key": keyword,
+    }
     async with httpx.AsyncClient() as client:
         resp = await client.get(url, params=params)
         result = resp.json()
-    if songs := result["data"]["song"]["list"]:
-        return MessageSegment.music("qq", songs[0]["songid"])
+    if songs := result["data"]["song"]["itemlist"]:
+        return MessageSegment.music("qq", songs[0]["id"])
     return "QQ音乐中找不到相关的歌曲"
 
 
