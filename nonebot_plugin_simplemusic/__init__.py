@@ -1,14 +1,15 @@
 import traceback
+
 from nonebot import on_command
-from nonebot.matcher import Matcher
-from nonebot.typing import T_Handler
-from nonebot.params import CommandArg
-from nonebot.plugin import PluginMetadata
 from nonebot.adapters.onebot.v11 import Message
 from nonebot.log import logger
+from nonebot.matcher import Matcher
+from nonebot.params import CommandArg
+from nonebot.plugin import PluginMetadata
+from nonebot.typing import T_Handler
 from tenacity import AsyncRetrying, stop_after_attempt
 
-from .data_source import sources, Source
+from .data_source import Source, sources
 
 __plugin_meta__ = PluginMetadata(
     name="点歌",

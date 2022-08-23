@@ -1,6 +1,8 @@
-import httpx
 from dataclasses import dataclass
-from typing import Union, Tuple, Protocol
+from difflib import SequenceMatcher
+from typing import Any, Dict, List, Protocol, Tuple, Union
+
+import httpx
 from nonebot.adapters.onebot.v11 import MessageSegment
 
 
@@ -21,18 +23,28 @@ async def search_qq(keyword: str) -> Union[str, MessageSegment]:
     async with httpx.AsyncClient() as client:
         resp = await client.get(url, params=params)
         result = resp.json()
-    if songs := result["data"]["song"]["itemlist"]:
-        return MessageSegment.music("qq", songs[0]["id"])
+    songs: List[Dict[str, str]] = result["data"]["song"]["itemlist"]
+    if songs:
+        songs.sort(
+            key=lambda x: SequenceMatcher(None, keyword, x["name"]).ratio(),
+            reverse=True,
+        )
+        return MessageSegment.music("qq", int(songs[0]["id"]))
     return "QQ音乐中找不到相关的歌曲"
 
 
 async def search_163(keyword: str) -> Union[str, MessageSegment]:
     url = "https://music.163.com/api/cloudsearch/pc"
-    params = {"s": keyword, "type": 1, "offset": 0, "limit": 1}
+    params = {"s": keyword, "type": 1, "offset": 0}
     async with httpx.AsyncClient() as client:
         resp = await client.post(url, params=params)
         result = resp.json()
-    if songs := result["result"]["songs"]:
+    songs: List[Dict[str, Any]] = result["result"]["songs"]
+    if songs:
+        songs.sort(
+            key=lambda x: SequenceMatcher(None, keyword, x["name"]).ratio(),
+            reverse=True,
+        )
         return MessageSegment.music("163", songs[0]["id"])
     return "网易云音乐中找不到相关的歌曲"
 
