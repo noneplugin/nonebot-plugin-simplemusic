@@ -1,13 +1,15 @@
 import traceback
+
 from nonebot import on_command
-from nonebot.matcher import Matcher
-from nonebot.typing import T_Handler
-from nonebot.params import CommandArg
-from nonebot.plugin import PluginMetadata
 from nonebot.adapters.onebot.v11 import Message
 from nonebot.log import logger
+from nonebot.matcher import Matcher
+from nonebot.params import CommandArg
+from nonebot.plugin import PluginMetadata
+from nonebot.typing import T_Handler
+from tenacity import AsyncRetrying, stop_after_attempt
 
-from .data_source import sources, Source
+from .data_source import Source, sources
 
 __plugin_meta__ = PluginMetadata(
     name="点歌",
@@ -25,16 +27,18 @@ __plugin_meta__ = PluginMetadata(
 def create_matchers():
     def create_handler(source: Source) -> T_Handler:
         async def handler(matcher: Matcher, msg: Message = CommandArg()):
-            keyword = msg.extract_plain_text().strip()
-            if keyword:
+            if keyword := msg.extract_plain_text().strip():
                 try:
-                    res = await source.func(keyword)
-                except:
+                    async for attempt in AsyncRetrying(
+                        stop=stop_after_attempt(3), reraise=True
+                    ):
+                        with attempt:
+                            res = await source.func(keyword)
+                except Exception:
                     logger.warning(traceback.format_exc())
-                    await matcher.finish("出错了，请稍后再试")
+                    res = "出错了，请稍后再试"
 
-                if res:
-                    await matcher.finish(res)
+                await matcher.finish(res)
 
         return handler
 
