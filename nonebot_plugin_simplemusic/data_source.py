@@ -1,12 +1,12 @@
+import httpx
 from dataclasses import dataclass
 from difflib import SequenceMatcher
-from typing import Any, Dict, List, Protocol, Tuple, Union
+from typing import Any, Dict, List, Protocol, Optional, Tuple
 
-import httpx
 from nonebot.adapters.onebot.v11 import MessageSegment
 
 
-async def search_qq(keyword: str) -> Union[str, MessageSegment]:
+async def search_qq(keyword: str) -> Optional[MessageSegment]:
     url = "https://c.y.qq.com/splcloud/fcgi-bin/smartbox_new.fcg"
     params = {
         "format": "json",
@@ -30,10 +30,9 @@ async def search_qq(keyword: str) -> Union[str, MessageSegment]:
             reverse=True,
         )
         return MessageSegment.music("qq", int(songs[0]["id"]))
-    return "QQ音乐中找不到相关的歌曲"
 
 
-async def search_163(keyword: str) -> Union[str, MessageSegment]:
+async def search_163(keyword: str) -> Optional[MessageSegment]:
     url = "https://music.163.com/api/cloudsearch/pc"
     params = {"s": keyword, "type": 1, "offset": 0}
     async with httpx.AsyncClient() as client:
@@ -46,10 +45,9 @@ async def search_163(keyword: str) -> Union[str, MessageSegment]:
             reverse=True,
         )
         return MessageSegment.music("163", songs[0]["id"])
-    return "网易云音乐中找不到相关的歌曲"
 
 
-async def search_kuwo(keyword: str) -> Union[str, MessageSegment]:
+async def search_kuwo(keyword: str) -> Optional[MessageSegment]:
     search_url = "https://search.kuwo.cn/r.s"
     params = {
         "all": keyword,
@@ -65,7 +63,13 @@ async def search_kuwo(keyword: str) -> Union[str, MessageSegment]:
         resp = await client.get(search_url, params=params)
         result = resp.json()
 
-        if songs := result["abslist"]:
+        songs: List[Dict[str, Any]] = result["abslist"]
+        if songs:
+            songs.sort(
+                key=lambda x: SequenceMatcher(None, keyword, x["SONGNAME"]).ratio(),
+                reverse=True,
+            )
+
             rid = str(songs[0]["MUSICRID"]).strip("MUSIC_")
             song_url = "http://m.kuwo.cn/newh5/singles/songinfoandlrc"
             params = {"musicId": rid, "httpsStatus": 1}
@@ -86,10 +90,9 @@ async def search_kuwo(keyword: str) -> Union[str, MessageSegment]:
                         content=info["artist"],
                         img_url=info["pic"],
                     )
-    return "酷我音乐中找不到相关的歌曲"
 
 
-async def search_kugou(keyword: str) -> Union[str, MessageSegment]:
+async def search_kugou(keyword: str) -> Optional[MessageSegment]:
     search_url = "http://mobilecdn.kugou.com/api/v3/search/song"
     params = {
         "format": "json",
@@ -102,7 +105,13 @@ async def search_kugou(keyword: str) -> Union[str, MessageSegment]:
         resp = await client.get(search_url, params=params)
         result = resp.json()
 
-        if songs := result["data"]["info"]:
+        songs: List[Dict[str, Any]] = result["data"]["info"]
+        if songs:
+            songs.sort(
+                key=lambda x: SequenceMatcher(None, keyword, x["songname"]).ratio(),
+                reverse=True,
+            )
+
             hash = songs[0]["hash"]
             album_id = songs[0]["album_id"]
             song_url = "http://m.kugou.com/app/i/getSongInfo.php"
@@ -117,17 +126,21 @@ async def search_kugou(keyword: str) -> Union[str, MessageSegment]:
                     content=info["author_name"],
                     img_url=str(info["imgUrl"]).format(size=240),
                 )
-    return "酷狗音乐中找不到相关的歌曲"
 
 
-async def search_migu(keyword: str) -> Union[str, MessageSegment]:
+async def search_migu(keyword: str) -> Optional[MessageSegment]:
     url = "https://m.music.migu.cn/migu/remoting/scr_search_tag"
     params = {"rows": 1, "type": 2, "keyword": keyword, "pgc": 1}
     headers = {"Referer": "https://m.music.migu.cn"}
     async with httpx.AsyncClient() as client:
         resp = await client.get(url, params=params, headers=headers)
         result = resp.json()
-    if songs := dict(result).get("musics", []):
+    songs: List[Dict[str, Any]] = dict(result).get("musics", [])
+    if songs:
+        songs.sort(
+            key=lambda x: SequenceMatcher(None, keyword, x["title"]).ratio(),
+            reverse=True,
+        )
         info = songs[0]
         return MessageSegment.music_custom(
             url=f"https://music.migu.cn/v3/music/song/{info['copyrightId']}",
@@ -136,16 +149,20 @@ async def search_migu(keyword: str) -> Union[str, MessageSegment]:
             content=info["singerName"],
             img_url=info["cover"],
         )
-    return "咪咕音乐中找不到相关的歌曲"
 
 
-async def search_bili(keyword: str) -> Union[str, MessageSegment]:
+async def search_bili(keyword: str) -> Optional[MessageSegment]:
     search_url = "https://api.bilibili.com/audio/music-service-c/s"
     params = {"page": 1, "pagesize": 1, "search_type": "music", "keyword": keyword}
     async with httpx.AsyncClient() as client:
         resp = await client.get(search_url, params=params)
         result = resp.json()
-    if songs := result["data"]["result"]:
+    songs: List[Dict[str, Any]] = result["data"]["result"]
+    if songs:
+        songs.sort(
+            key=lambda x: SequenceMatcher(None, keyword, x["title"]).ratio(),
+            reverse=True,
+        )
         info = songs[0]
         return MessageSegment.music_custom(
             url=f"https://www.bilibili.com/audio/au{info['id']}",
@@ -154,25 +171,25 @@ async def search_bili(keyword: str) -> Union[str, MessageSegment]:
             content=info["author"],
             img_url=info["cover"],
         )
-    return "B站音频区中找不到相关的歌曲"
 
 
 class Func(Protocol):
-    async def __call__(self, keyword: str) -> Union[str, MessageSegment]:
+    async def __call__(self, keyword: str) -> Optional[MessageSegment]:
         ...
 
 
 @dataclass
 class Source:
+    name: str
     keywords: Tuple[str, ...]
     func: Func
 
 
 sources = [
-    Source(("点歌", "qq点歌", "QQ点歌"), search_qq),
-    Source(("163点歌", "网易点歌", "网易云点歌"), search_163),
-    Source(("kuwo点歌", "酷我点歌"), search_kuwo),
-    Source(("kugou点歌", "酷狗点歌"), search_kugou),
-    Source(("migu点歌", "咪咕点歌"), search_migu),
-    Source(("bili点歌", "bilibili点歌", "b站点歌", "B站点歌"), search_bili),
+    Source("QQ音乐", ("qq点歌", "QQ点歌"), search_qq),
+    Source("网易云音乐", ("163点歌", "网易点歌", "网易云点歌"), search_163),
+    Source("酷我音乐", ("kuwo点歌", "酷我点歌"), search_kuwo),
+    Source("酷狗音乐", ("kugou点歌", "酷狗点歌"), search_kugou),
+    Source("咪咕音乐", ("migu点歌", "咪咕点歌"), search_migu),
+    Source("B站音频区", ("bili点歌", "bilibili点歌", "b站点歌", "B站点歌"), search_bili),
 ]
