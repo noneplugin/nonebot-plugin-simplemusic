@@ -1,7 +1,7 @@
 import asyncio
 import traceback
 
-from nonebot import on_command
+from nonebot import on_command, get_driver
 from nonebot.log import logger
 from nonebot.matcher import Matcher
 from nonebot.typing import T_Handler
@@ -10,6 +10,8 @@ from nonebot.plugin import PluginMetadata
 from nonebot.adapters.onebot.v11 import Message
 
 from .data_source import Func, Source, sources
+
+config = get_driver().config.dict()
 
 __plugin_meta__ = PluginMetadata(
     name="点歌",
@@ -23,6 +25,14 @@ __plugin_meta__ = PluginMetadata(
     },
 )
 
+default_source = config.get('simplemusic_source', [])
+
+def set_default_source(sources, default_source):
+    for i, source in enumerate(sources):
+        if source.name == default_source:
+            sources.pop(i)
+            sources.insert(0, source)
+            break
 
 def retry(func: Func, count=3, sleep=3):
     async def wrapper(*args, **kwargs):
@@ -73,6 +83,7 @@ async def handler(matcher: Matcher, msg: Message = CommandArg()):
         matcher.block = False
         await matcher.finish()
 
+    set_default_source(sources, default_source)
     res = None
     for source in sources:
         try:
