@@ -2,12 +2,12 @@ import asyncio
 import traceback
 
 from nonebot import on_command
+from nonebot.adapters.onebot.v11 import Message
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.typing import T_Handler
 from nonebot.params import CommandArg
 from nonebot.plugin import PluginMetadata
-from nonebot.adapters.onebot.v11 import Message
+from nonebot.typing import T_Handler
 
 from .data_source import Func, Source, sources
 
@@ -19,7 +19,7 @@ __plugin_meta__ = PluginMetadata(
         "unique_name": "simplemusic",
         "example": "点歌 万古生香",
         "author": "meetwq <meetwq@gmail.com>",
-        "version": "0.1.5",
+        "version": "0.1.6",
     },
 )
 
