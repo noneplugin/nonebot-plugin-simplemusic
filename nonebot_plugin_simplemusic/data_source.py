@@ -78,7 +78,7 @@ async def search_kuwo(keyword: str) -> Optional[MessageSegment]:
 
             if info := result["data"]["songinfo"]:
                 play_url = "https://kuwo.cn/api/v1/www/music/playUrl"
-                params = {"mid": rid, "type": "music", "httpsStatus": 1}
+                params = {"mid": rid, "type": "convert_url3", "httpsStatus": 1, "br": "128kmp3"}
                 resp = httpx.get(play_url, params=params)
                 result = resp.json()
 
