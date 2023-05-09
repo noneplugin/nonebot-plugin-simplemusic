@@ -1,8 +1,8 @@
-import httpx
 from dataclasses import dataclass
 from difflib import SequenceMatcher
-from typing import Any, Dict, List, Protocol, Optional, Tuple
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
+import httpx
 from nonebot.adapters.onebot.v11 import MessageSegment
 
 
@@ -89,7 +89,7 @@ async def search_kuwo(keyword: str) -> Optional[MessageSegment]:
                             "type": "custom",
                             "subtype": "kuwo",
                             "url": f"https://kuwo.cn/play_detail/{rid}",
-                            "audio": data["url"],
+                            "voice": data["url"],
                             "title": info["songName"],
                             "content": info["artist"],
                             "image": info["pic"],
@@ -130,7 +130,7 @@ async def search_kugou(keyword: str) -> Optional[MessageSegment]:
                         "type": "custom",
                         "subtype": "kugou",
                         "url": f"https://www.kugou.com/song/#hash={hash}&album_id={album_id}",
-                        "audio": info["url"],
+                        "voice": info["url"],
                         "title": info["songName"],
                         "content": info["author_name"],
                         "image": str(info["imgUrl"]).format(size=240),
@@ -158,7 +158,7 @@ async def search_migu(keyword: str) -> Optional[MessageSegment]:
                 "type": "custom",
                 "subtype": "migu",
                 "url": f"https://music.migu.cn/v3/music/song/{info['copyrightId']}",
-                "audio": info["mp3"],
+                "voice": info["mp3"],
                 "title": info["title"],
                 "content": info["singerName"],
                 "image": info["cover"],
