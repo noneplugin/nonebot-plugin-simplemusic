@@ -179,12 +179,26 @@ async def search_bili(keyword: str) -> Optional[MessageSegment]:
             reverse=True,
         )
         info = songs[0]
-        return MessageSegment.share(
-            url=f"https://www.bilibili.com/audio/au{info['id']}",
-            title=info["title"],
-            content=info["author"],
-            image=info["cover"],
-        )
+        return MessageSegment.text(f"https://www.bilibili.com/audio/au{info['id']}")
+
+        # return MessageSegment.share(
+        #     url=f"https://www.bilibili.com/audio/au{info['id']}",
+        #     title=info["title"],
+        #     content=info["author"],
+        #     image=info["cover"],
+        # )
+
+        """https://github.com/Mrs4s/go-cqhttp/issues/1495"""
+        # return MessageSegment(
+        #     "music",
+        #     {
+        #         "type": "custom",
+        #         "url": f"https://www.bilibili.com/audio/au{info['id']}",
+        #         "title": info["title"],
+        #         "content": info["author"],
+        #         "image": info["cover"],
+        #     },
+        # )
 
 
 class Func(Protocol):
