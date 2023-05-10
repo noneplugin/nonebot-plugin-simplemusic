@@ -19,7 +19,7 @@ __plugin_meta__ = PluginMetadata(
         "unique_name": "simplemusic",
         "example": "点歌 万古生香",
         "author": "meetwq <meetwq@gmail.com>",
-        "version": "0.1.6",
+        "version": "0.1.7",
     },
 )
 
